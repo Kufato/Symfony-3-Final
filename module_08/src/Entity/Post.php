@@ -23,6 +23,12 @@ class Post
     #[ORM\Column]
     private ?\DateTime $created = null;
 
+    // Constructor to initialize the created property with the current date and time
+    public function __construct()
+    {
+        $this->created = new \DateTime();
+    }
+
     public function getId(): ?int
     {
         return $this->id;
@@ -62,12 +68,5 @@ class Post
     public function getCreated(): ?\DateTime
     {
         return $this->created;
-    }
-
-    public function setCreated(\DateTime $created): static
-    {
-        $this->created = $created;
-
-        return $this;
     }
 }

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Blog</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a1a; }
+        .page { max-width: 480px; margin: 3rem auto; padding: 0 1rem; }
+        .logo { font-size: 15px; font-weight: 500; margin-bottom: 2rem; }
+        .logo span { color: #888; font-weight: 400; }
+        .card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 12px; padding: 2rem; }
+        h2 { font-size: 18px; font-weight: 500; margin-bottom: 0.25rem; }
+        .subtitle { font-size: 13px; color: #888; margin-bottom: 1.5rem; }
+        label { display: block; font-size: 12px; color: #888; margin: 12px 0 4px; }
+        input, textarea { width: 100%; padding: 8px 10px; border: 0.5px solid #e0e0e0; border-radius: 8px; font-size: 14px; outline: none; }
+        input:focus, textarea:focus { border-color: #aaa; }
+        textarea { resize: vertical; min-height: 100px; }
+        .btn { width: 100%; margin-top: 1.25rem; padding: 10px; font-size: 14px; font-weight: 500; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+        .btn:hover { background: #333; }
+        .badge { display: inline-block; font-size: 11px; background: #f5f5f3; color: #888; padding: 2px 8px; border-radius: 99px; border: 0.5px solid #e0e0e0; margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="logo">Super<span> site</span></div>
+        {% block content %}{% endblock %}
+    </div>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

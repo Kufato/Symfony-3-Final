@@ -1,0 +1,71 @@
+{% extends 'base.html.twig' %}
+
+{% block content %}
+    {% if app.user %}
+        {{ form_start(form, {'attr': {'id': 'post-form', 'class': 'card'}}) }}
+            <span class="badge">Connecté en tant que {{ app.user.username }}</span>
+            <h2>Nouvel article</h2>
+            <p class="subtitle">Rédigez et publiez votre post.</p>
+            <label>Titre</label>
+            {{ form_widget(form.title) }}
+            <label>Contenu</label>
+            {{ form_widget(form.content) }}
+            <button type="submit" class="btn">Publier</button>
+        {{ form_end(form) }}
+    {% else %}
+        {{ render(controller('App\\Controller\\UserController::loginAction')) }}
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // --- GESTION DU LOGIN ---
+            const loginForm = document.getElementById('login-form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    fetch('/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: loginForm.email.value,
+                            password: loginForm.password.value,
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert('Invalid credentials');
+                        }
+                    });
+                });
+            }
+
+            // --- GESTION DE LA SOUMISSION DU POST ---
+            const postForm = document.getElementById('post-form');
+            if (postForm) {
+                postForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    fetch(postForm.action, {
+                        method: 'POST',
+                        body: new FormData(postForm),
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Post created successfully!');
+                            postForm.reset();
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    });
+                });
+            }
+
+        });
+    </script>
+{% endblock %}
