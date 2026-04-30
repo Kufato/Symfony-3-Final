@@ -8,8 +8,13 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a1a; }
         .page { max-width: 480px; margin: 3rem auto; padding: 0 1rem; }
-        .logo { font-size: 15px; font-weight: 500; margin-bottom: 2rem; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .logo { font-size: 15px; font-weight: 500; }
         .logo span { color: #888; font-weight: 400; }
+        .logout-btn { font-size: 12px; color: #ffffff; background: #ff3f3f; border: 0.5px solid #e0e0e0; border-radius: 99px; padding: 4px 12px; cursor: pointer; text-decoration: none; }
+        .logout-btn:hover { background: #f5f5f3; color: #ff3f3f; border-color: #ff3f3f; }
+
         .card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 12px; padding: 2rem; }
         h2 { font-size: 18px; font-weight: 500; margin-bottom: 0.25rem; }
         .subtitle { font-size: 13px; color: #888; margin-bottom: 1.5rem; }
@@ -19,12 +24,25 @@
         textarea { resize: vertical; min-height: 100px; }
         .btn { width: 100%; margin-top: 1.25rem; padding: 10px; font-size: 14px; font-weight: 500; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
         .btn:hover { background: #333; }
-        .badge { display: inline-block; font-size: 11px; background: #f5f5f3; color: #888; padding: 2px 8px; border-radius: 99px; border: 0.5px solid #e0e0e0; margin-bottom: 1.5rem; }
+        .badge { display: inline-block; font-size: 11px; background: #469c00; color: #ffffff; padding: 2px 8px; border-radius: 99px; border: 0.5px solid #e0e0e0; margin-bottom: 1.5rem; }
+
+        .toast { display: none; margin-bottom: 1rem; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; }
+        .toast.success { background: #f0faf4; border: 0.5px solid #a3d9b1; color: #1a6b3a; }
+        .toast.error { background: #fdf2f2; border: 0.5px solid #f0a8a8; color: #9b1c1c; }
+        .toast.show { display: block; }
     </style>
 </head>
 <body>
     <div class="page">
-        <div class="logo">Super<span> site</span></div>
+        <div class="header">
+            <div class="logo">Super<span> site</span></div>
+            {% if app.user %}
+                <a href="/logout" class="logout-btn">Se déconnecter</a>
+            {% endif %}
+        </div>
+
+        <div id="toast" class="toast"></div>
+
         {% block content %}{% endblock %}
     </div>
     {% block scripts %}{% endblock %}

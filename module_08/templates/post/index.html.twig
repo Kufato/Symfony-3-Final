@@ -1,5 +1,4 @@
 {% extends 'base.html.twig' %}
-
 {% block content %}
     {% if app.user %}
         {{ form_start(form, {'attr': {'id': 'post-form', 'class': 'card'}}) }}
@@ -19,6 +18,15 @@
 
 {% block scripts %}
     <script>
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 4000);
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
 
             // --- GESTION DU LOGIN ---
@@ -39,7 +47,7 @@
                         if (data.success) {
                             location.reload();
                         } else {
-                            alert('Invalid credentials');
+                            showToast('Identifiants incorrects.', 'error');
                         }
                     });
                 });
@@ -57,15 +65,14 @@
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
-                            alert('Post created successfully!');
+                            showToast('Article publié avec succès !', 'success');
                             postForm.reset();
                         } else {
-                            alert('Error: ' + data.message);
+                            showToast('Erreur : ' + data.message, 'error');
                         }
                     });
                 });
             }
-
         });
     </script>
 {% endblock %}
