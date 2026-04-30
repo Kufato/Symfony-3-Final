@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class PostController extends AbstractController
 {
@@ -21,8 +22,12 @@ class PostController extends AbstractController
             'action' => $this->generateUrl('app_post_new'),
         ]);
 
+        // Retrieves all posts sorted by creation date
+        $posts = $em->getRepository(Post::class)->findBy([], ['created' => 'DESC']);
+
         return $this->render('post/index.html.twig', [
             'form' => $form->createView(),
+            'posts' => $posts,
         ]);
     }
 
@@ -38,15 +43,27 @@ class PostController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-
-            // persist() tells Doctrine "prepare this object for the database"
             $em->persist($post);
-            
-            // flush() actually executes the INSERT SQL query on the database
             $em->flush();
-            return new JsonResponse(['success' => true, 'message' => 'Post created!']);
+
+            return new JsonResponse([
+                'success' => true,
+                'post' => [
+                    'title' => $post->getTitle(),
+                    'created' => $post->getCreated()->format('d/m/Y H:i'),
+                ]
+            ]);
         }
 
-        return new JsonResponse(['success' => false, 'message' => 'Invalid data'], 400);
+        // Retrieves errors from the form
+        $errors = [];
+        foreach ($form->getErrors(true) as $error) {
+            $errors[] = $error->getMessage();
+        }
+
+        return new JsonResponse([
+            'success' => false,
+            'message' => implode(', ', $errors)
+        ], 400);
     }
 }

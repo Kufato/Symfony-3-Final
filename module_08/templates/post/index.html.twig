@@ -14,6 +14,21 @@
     {% else %}
         {{ render(controller('App\\Controller\\UserController::loginAction')) }}
     {% endif %}
+
+    {# Liste des posts - visible par tous #}
+    <div class="posts-list" style="margin-top: 2rem;">
+        <h2 style="font-size: 16px; font-weight: 500; margin-bottom: 1rem;">Articles publiés</h2>
+        <ul id="posts-list" style="list-style: none;">
+            {% for post in posts %}
+                <li class="post-item">
+                    <span class="post-title">{{ post.title }}</span>
+                    <span class="post-date">{{ post.created|date('d/m/Y H:i') }}</span>
+                </li>
+            {% else %}
+                <li class="post-empty">Aucun article publié pour le moment.</li>
+            {% endfor %}
+        </ul>
+    </div>
 {% endblock %}
 
 {% block scripts %}
@@ -22,9 +37,21 @@
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.className = 'toast ' + type + ' show';
-            setTimeout(() => {
-                toast.className = 'toast';
-            }, 4000);
+            setTimeout(() => { toast.className = 'toast'; }, 4000);
+        }
+
+        function addPostToList(post) {
+            const list = document.getElementById('posts-list');
+
+            // Supprime le message "aucun article" s'il existe
+            const empty = list.querySelector('.post-empty');
+            if (empty) empty.remove();
+
+            const li = document.createElement('li');
+            li.className = 'post-item';
+            li.innerHTML = `<span class="post-title">${post.title}</span>
+                            <span class="post-date">${post.created}</span>`;
+            list.appendChild(li);
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -65,8 +92,9 @@
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
-                            showToast('Post publié avec succès !', 'success');
+                            showToast('Article publié avec succès !', 'success');
                             postForm.reset();
+                            addPostToList(data.post);
                         } else {
                             showToast('Erreur : ' + data.message, 'error');
                         }

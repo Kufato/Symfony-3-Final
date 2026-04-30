@@ -9,6 +9,7 @@ composer require symfony/form
 composer require twig/twig
 composer require symfony/twig-bundle
 composer require symfony/asset
+composer require symfony/validator 
 
 # Exercice 00
 - Create the Post entity 
@@ -36,3 +37,12 @@ composer require symfony/asset
                                                 src/Command/CreateUserCommand.php
 
 - Add new users --> php bin/console app:create-user
+
+# Exercice 02
+- Modify the defaultAction function in the PostController to retrieve all the post and send them to the template
+
+- Modify the Post entity to set the unique title
+
+- Modify the newAction in the PostController to retrieve errors from the form
+
+- Update the index.html.twig and the base.html.twig file to display all the post
