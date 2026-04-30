@@ -65,7 +65,7 @@
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
-                            showToast('Article publié avec succès !', 'success');
+                            showToast('Post publié avec succès !', 'success');
                             postForm.reset();
                         } else {
                             showToast('Erreur : ' + data.message, 'error');
