@@ -49,6 +49,7 @@ class PostController extends AbstractController
             return new JsonResponse([
                 'success' => true,
                 'post' => [
+                    'id'      => $post->getId(),
                     'title' => $post->getTitle(),
                     'created' => $post->getCreated()->format('d/m/Y H:i'),
                 ]
@@ -66,4 +67,38 @@ class PostController extends AbstractController
             'message' => implode(', ', $errors)
         ], 400);
     }
+
+    #[Route('/view/{id}', name: 'app_post_view', methods: ['GET'])]
+    public function viewAction(Post $post): JsonResponse
+    {
+        return new JsonResponse([
+            'success' => true,
+            'post' => [
+                'id' => $post->getId(),
+                'title' => $post->getTitle(),
+                'content' => $post->getContent(),
+                'created' => $post->getCreated()->format('d/m/Y H:i'),
+                'canDelete' => $this->getUser() !== null,
+            ]
+        ]);
+    }
+
+    #[Route('/delete/{id}', name: 'app_post_delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_USER')]
+    public function deleteAction(
+        Post $post,
+        EntityManagerInterface $em
+    ): JsonResponse {
+
+        $id = $post->getId();
+
+        $em->remove($post);
+        $em->flush();
+
+        return new JsonResponse([
+            'success' => true,
+            'id' => $id
+        ]);
+    }
+
 }
