@@ -1,0 +1,8 @@
+2026-05-15 09:28:37 pid:4789 Workerman[console] start in DEBUG mode
+2026-05-15 09:47:29 pid:4789 Workerman[console] received signal SIGINT
+2026-05-15 09:47:29 pid:4789 Workerman[console] stopping
+2026-05-15 09:47:29 pid:4789 Workerman[console] has been stopped
+2026-05-15 09:47:39 pid:5639 Workerman[console] start in DEBUG mode
+2026-05-15 12:03:38 pid:5639 Workerman[console] received signal SIGINT
+2026-05-15 12:03:38 pid:5639 Workerman[console] stopping
+2026-05-15 12:03:38 pid:5639 Workerman[console] has been stopped

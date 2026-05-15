@@ -1,145 +1,324 @@
 {% extends 'base.html.twig' %}
+
 {% block content %}
 
-    {# Zone détail d'un post - cachée par défaut #}
-    <div id="post-detail" class="card" style="display:none; margin-bottom: 1.5rem;">
-        <h2 id="detail-title"></h2>
-        <span id="detail-date" class="post-date" style="font-size:12px; color:#888;"></span>
-        <p id="detail-content" style="margin-top: 1rem; font-size: 14px; line-height: 1.6;"></p>
-        <button id="detail-delete-btn" class="btn" style="margin-top: 1rem; background:#ff3f3f; display:none;">
-            Supprimer
-        </button>
+    {# =========================
+       MODALE DETAIL POST
+    ========================== #}
+    <div id="post-modal" class="modal-overlay" style="display:none;">
+        <div id="post-detail" class="modal-content card">
+
+            <button id="close-modal" class="modal-close">
+                &times;
+            </button>
+
+            <h2 id="detail-title"></h2>
+
+            <span id="detail-date"
+                  class="post-date"
+                  style="font-size:12px; color:#888;">
+            </span>
+
+            <p id="detail-content"
+               style="margin-top:1rem; font-size:14px; line-height:1.6;">
+            </p>
+
+            <button id="detail-delete-btn"
+                    class="btn"
+                    style="margin-top:1rem; background:#ff3f3f; display:none;">
+                Supprimer
+            </button>
+
+        </div>
     </div>
 
     {% if app.user %}
         {{ form_start(form, {'attr': {'id': 'post-form', 'class': 'card'}}) }}
-            <span class="badge">Connecté en tant que {{ app.user.username }}</span>
+
+            <span class="badge">
+                Connecté en tant que {{ app.user.username }}
+            </span>
+
             <h2>Nouvel article</h2>
-            <p class="subtitle">Rédigez et publiez votre post.</p>
+
+            <p class="subtitle">
+                Rédigez et publiez votre post.
+            </p>
+
             <label>Titre</label>
             {{ form_widget(form.title) }}
+
             <label>Contenu</label>
             {{ form_widget(form.content) }}
-            <button type="submit" class="btn">Publier</button>
+
+            <button type="submit" class="btn">
+                Publier
+            </button>
+
         {{ form_end(form) }}
+
     {% else %}
         {{ render(controller('App\\Controller\\UserController::loginAction')) }}
     {% endif %}
 
-    {# Liste des posts - visible par tous #}
+    {# =========================
+       LISTE POSTS
+    ========================== #}
     <div class="posts-list" style="margin-top: 2rem;">
-        <h2 style="font-size: 16px; font-weight: 500; margin-bottom: 1rem;">Articles publiés</h2>
+
+        <h2 style="font-size: 16px; font-weight: 500; margin-bottom: 1rem;">
+            Articles publiés
+        </h2>
+
         <ul id="posts-list" style="list-style: none;">
+
             {% for post in posts %}
+
                 <li class="post-item" data-id="{{ post.id }}">
-                    <span class="post-title post-title-link">{{ post.title }}</span>
-                    <span class="post-date">{{ post.created|date('d/m/Y H:i') }}</span>
+
+                    <span class="post-title post-title-link">
+                        {{ post.title }}
+                    </span>
+
+                    <span class="post-date">
+                        {{ post.created|date('d/m/Y H:i') }}
+                    </span>
+
                 </li>
+
             {% else %}
-                <li class="post-empty">Aucun article publié pour le moment.</li>
+
+                <li class="post-empty">
+                    Aucun article publié pour le moment.
+                </li>
+
             {% endfor %}
+
         </ul>
     </div>
+
 {% endblock %}
 
 {% block scripts %}
     <script>
+
         function showToast(message, type) {
             const toast = document.getElementById('toast');
+
             toast.textContent = message;
             toast.className = 'toast ' + type + ' show';
-            setTimeout(() => { toast.className = 'toast'; }, 4000);
+
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 4000);
         }
 
         function addPostToList(post) {
+
             const list = document.getElementById('posts-list');
 
             const empty = list.querySelector('.post-empty');
-            if (empty) empty.remove();
+
+            if (empty) {
+                empty.remove();
+            }
 
             const li = document.createElement('li');
+
             li.className = 'post-item';
             li.dataset.id = post.id;
+
             li.innerHTML = `
-                <span class="post-title post-title-link">${post.title}</span>
-                <span class="post-date">${post.created}</span>
+                <span class="post-title post-title-link">
+                    ${post.title}
+                </span>
+
+                <span class="post-date">
+                    ${post.created}
+                </span>
             `;
+
             list.prepend(li);
 
-            // Branche le click sur le nouveau post
             bindPostClick(li);
         }
 
-        // Affiche les détails d'un post dans la zone #post-detail
+        // =========================
+        // OUVRIR LA MODALE
+        // =========================
+
         function showPostDetail(post) {
+
             document.getElementById('detail-title').textContent = post.title;
+
             document.getElementById('detail-date').textContent = post.created;
+
             document.getElementById('detail-content').textContent = post.content;
 
             const deleteBtn = document.getElementById('detail-delete-btn');
+
             deleteBtn.style.display = post.canDelete ? 'block' : 'none';
+
             deleteBtn.dataset.id = post.id;
 
-            document.getElementById('post-detail').style.display = 'block';
+            document.getElementById('post-modal').style.display = 'flex';
+
+            // Empêche le scroll arrière-plan
+            document.body.style.overflow = 'hidden';
         }
 
-        // Attache l'événement click sur un <li>
-        function bindPostClick(li) {
-            li.querySelector('.post-title-link').addEventListener('click', function () {
-                const id = li.dataset.id;
-                fetch(`/view/${id}`)
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success) {
-                            showPostDetail(data.post);
-                        } else {
-                            showToast('Impossible de charger le post.', 'error');
-                        }
-                    });
-            });
+        // =========================
+        // FERMER LA MODALE
+        // =========================
+
+        function closeModal() {
+
+            document.getElementById('post-modal').style.display = 'none';
+
+            document.body.style.overflow = '';
         }
+
+        // =========================
+        // CLICK SUR UN POST
+        // =========================
+
+        function bindPostClick(li) {
+
+            li.querySelector('.post-title-link')
+                .addEventListener('click', function () {
+
+                    const id = li.dataset.id;
+
+                    fetch(`/view/${id}`)
+                        .then(r => r.json())
+                        .then(data => {
+
+                            if (data.success) {
+
+                                showPostDetail(data.post);
+
+                            } else {
+
+                                showToast(
+                                    'Impossible de charger le post.',
+                                    'error'
+                                );
+                            }
+                        });
+                });
+        }
+
+        // =========================
+        // WEBSOCKET
+        // =========================
+
+        const ws = new WebSocket('ws://localhost:8080');
+
+        ws.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+
+            if (data.type === 'post_created') {
+                addPostToList(data.post);
+            }
+
+            if (data.type === 'post_deleted') {
+                const li = document.querySelector(
+                    `#posts-list .post-item[data-id="${data.id}"]`
+                );
+                if (li) li.remove();
+
+                // Ferme la modale si elle affiche le post supprimé
+                const deleteBtn = document.getElementById('detail-delete-btn');
+                if (deleteBtn && deleteBtn.dataset.id == data.id) {
+                    closeModal();
+                }
+            }
+        };
 
         document.addEventListener('DOMContentLoaded', function () {
 
-            // Branche le click sur tous les posts existants (chargés côté serveur)
-            document.querySelectorAll('#posts-list .post-item').forEach(bindPostClick);
+            // =========================
+            // BRANCHER POSTS EXISTANTS
+            // =========================
 
-            // --- BOUTON SUPPRIMER ---
-            document.getElementById('detail-delete-btn').addEventListener('click', function () {
-                const id = this.dataset.id;
-                if (!confirm('Supprimer cet article ?')) return;
+            document.querySelectorAll('#posts-list .post-item')
+                .forEach(bindPostClick);
 
-                fetch(`/delete/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                    }
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        // Retire le post de la liste
-                        const li = document.querySelector(`#posts-list .post-item[data-id="${data.id}"]`);
-                        if (li) li.remove();
+            // =========================
+            // FERMER MODALE
+            // =========================
 
-                        // Cache la zone détail
-                        document.getElementById('post-detail').style.display = 'none';
+            document.getElementById('close-modal')
+                .addEventListener('click', closeModal);
 
-                        showToast('Article supprimé.', 'success');
-                    } else {
-                        showToast('Erreur lors de la suppression.', 'error');
+            // Fermer si clic sur fond sombre
+            document.getElementById('post-modal')
+                .addEventListener('click', function (e) {
+
+                    if (e.target === this) {
+                        closeModal();
                     }
                 });
+
+            // Fermer avec Echap
+            document.addEventListener('keydown', function (e) {
+
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
             });
 
-            // --- GESTION DU LOGIN ---
+            // =========================
+            // SUPPRESSION
+            // =========================
+
+            document.getElementById('detail-delete-btn')
+                .addEventListener('click', function () {
+
+                    const id = this.dataset.id;
+
+                    if (!confirm('Supprimer cet article ?')) {
+                        return;
+                    }
+
+                    fetch(`/delete/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                    if (data.success) {
+
+                        ws.send(JSON.stringify({ type: 'post_deleted', id: data.id }));
+
+                        showToast('Article supprimé.', 'success');
+
+                    }
+                    else {
+                        showToast('Erreur lors de la suppression.', 'error');
+                    }
+                    });
+                });
+
+            // =========================
+            // LOGIN
+            // =========================
+
             const loginForm = document.getElementById('login-form');
+
             if (loginForm) {
+
                 loginForm.addEventListener('submit', function (e) {
+
                     e.preventDefault();
+
                     fetch('/login', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
                         body: JSON.stringify({
                             username: loginForm.email.value,
                             password: loginForm.password.value,
@@ -147,36 +326,63 @@
                     })
                     .then(r => r.json())
                     .then(data => {
+
                         if (data.success) {
+
                             location.reload();
+
                         } else {
-                            showToast('Identifiants incorrects.', 'error');
+
+                            showToast(
+                                'Identifiants incorrects.',
+                                'error'
+                            );
                         }
                     });
                 });
             }
 
-            // --- GESTION DE LA SOUMISSION DU POST ---
+            // =========================
+            // CREATION POST
+            // =========================
+
             const postForm = document.getElementById('post-form');
+
             if (postForm) {
+
                 postForm.addEventListener('submit', function (e) {
+
                     e.preventDefault();
+
                     fetch(postForm.action, {
                         method: 'POST',
                         body: new FormData(postForm),
                     })
                     .then(r => r.json())
                     .then(data => {
+
                         if (data.success) {
-                            showToast('Article publié avec succès !', 'success');
+
+                            showToast(
+                                'Article publié avec succès !',
+                                'success'
+                            );
+
                             postForm.reset();
-                            addPostToList(data.post);
+
+                            ws.send(JSON.stringify({ type: 'post_created', post: data.post }));
+
                         } else {
-                            showToast('Erreur : ' + data.message, 'error');
+
+                            showToast(
+                                'Erreur : ' + data.message,
+                                'error'
+                            );
                         }
                     });
                 });
             }
         });
+
     </script>
 {% endblock %}
