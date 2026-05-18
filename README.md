@@ -186,9 +186,21 @@ php bin/console websocket:server
 ## Useful Commands
 
 ```bash
-php bin/console app:create-user                                      # Create a new user
-php bin/console cache:clear                                          # Clear the cache
-php bin/console debug:router                                         # List all routes
-php bin/console dbal:run-sql "SELECT email, username FROM user"      # Inspect users in DB
-php bin/console websocket:server                                     # Start the WebSocket server
+# Create a new user
+php bin/console app:create-user
+
+# Clear the cache
+php bin/console cache:clear
+
+# List all routes
+php bin/console debug:router
+
+# Inspect users in DB
+php bin/console dbal:run-sql "SELECT email, username FROM user"
+
+# Start the WebSocket server
+php bin/console websocket:server
+
+# Inspect posts in DB
+php bin/console dbal:run-sql "SELECT * FROM post"
 ```
