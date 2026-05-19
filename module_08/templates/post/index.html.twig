@@ -84,16 +84,14 @@
                 {# data-id is used by JS to identify the post for view/delete actions #}
                 <li class="post-item" data-id="{{ post.id }}">
 
-                    <span class="post-title post-title-link">
-                        {{ post.title }}
-                    </span>
+                    <span class="post-title post-title-link">{{ post.title }}</span>
 
-                    <span class="post-date">
-                        {{ post.created|date('d/m/Y H:i') }}
+                    <span style="display:flex; align-items:center; gap:6px;">
+                        <span class="post-date">{{ post.created|date('d/m/Y H:i') }}</span>
+                        <span class="post-arrow">›</span>
                     </span>
 
                 </li>
-
             {% else %}
 
                 <li class="post-empty">
@@ -103,6 +101,7 @@
             {% endfor %}
 
         </ul>
+        
     </div>
 
 {% endblock %}
