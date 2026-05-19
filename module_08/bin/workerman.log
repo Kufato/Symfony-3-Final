@@ -11,3 +11,5 @@
 2026-05-18 11:27:57 pid:23060 Workerman[console] stopping
 2026-05-18 11:27:57 pid:23060 Workerman[console] has been stopped
 2026-05-19 08:16:19 pid:7 Workerman[console] start in DEBUG mode
+2026-05-19 09:08:49 pid:7 Workerman[console] start in DEBUG mode
+2026-05-19 09:08:49 pid:7 Master pid:7 is not alive

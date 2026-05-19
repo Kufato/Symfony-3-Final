@@ -9,7 +9,7 @@ A Symfony 7.4 blog application with Ajax forms, modal post viewing, real-time up
 | Layer | Technology |
 |---|---|
 | Framework | Symfony 7.4.* (LTS) |
-| Language | PHP 8.5 |
+| Language | PHP 8.4 |
 | Database | SQLite (`var/app.db`) |
 | Templating | Twig |
 | Frontend | Vanilla JavaScript (Ajax + WebSocket) |
@@ -39,6 +39,38 @@ composer require symfony/asset
 composer require symfony/validator
 composer require workerman/workerman
 ```
+
+---
+
+## Running the app
+
+### Option A — Local (Mac)
+
+Two terminals are required:
+
+```bash
+# Terminal 1 — Symfony dev server
+symfony server:start
+
+# Terminal 2 — WebSocket server
+php bin/console websocket:server
+```
+
+### Option B — Docker (recommended for Linux / VM)
+
+```bash
+# Build the image (first time or after Dockerfile changes)
+make build
+
+# Start the containers
+make up
+
+# Stop the containers
+make down
+```
+
+The app will be available at `http://localhost:8000`.
+Both the Symfony server and the WebSocket server (port 8080) start automatically inside the container.
 
 ---
 
@@ -171,36 +203,34 @@ php bin/console websocket:server
 - When a post is **created**: instead of updating the DOM directly, the client sends `{ type: 'post_created', post: {...} }` to the WS server, which rebroadcasts it to everyone — all tabs update their list
 - When a post is **deleted**: same pattern — the client sends `{ type: 'post_deleted', id: ... }` and all tabs remove the post from their list and close the modal if it was open
 
-**Running the app (two terminals required):**
-
-```bash
-# Terminal 1 — Symfony dev server
-symfony server:start
-
-# Terminal 2 — WebSocket server
-php bin/console websocket:server
-```
-
 ---
 
 ## Useful Commands
 
+### Local
+
 ```bash
-# Create a new user
-php bin/console app:create-user
+php bin/console app:create-user                                   # Create a new user
+php bin/console cache:clear                                       # Clear the cache
+php bin/console debug:router                                      # List all routes
+php bin/console dbal:run-sql "SELECT email, username FROM user"   # Inspect users in DB
+php bin/console dbal:run-sql "SELECT * FROM post"                 # Inspect posts in DB
+php bin/console websocket:server                                  # Start the WebSocket server
+```
 
-# Clear the cache
-php bin/console cache:clear
+### Docker
 
-# List all routes
-php bin/console debug:router
-
-# Inspect users in DB
-php bin/console dbal:run-sql "SELECT email, username FROM user"
-
-# Start the WebSocket server
-php bin/console websocket:server
-
-# Inspect posts in DB
-php bin/console dbal:run-sql "SELECT * FROM post"
+```bash
+make build          # Build the Docker image
+make up             # Start the containers (foreground)
+make up-d           # Start the containers (background)
+make down           # Stop the containers
+make restart        # Rebuild and restart
+make shell          # Open a bash shell inside the container
+make create-user    # Create a new user
+make cache-clear    # Clear the Symfony cache
+make routes         # List all routes
+make db-users       # Inspect users in DB
+make db-posts       # Inspect posts in DB
+make logs           # Follow container logs
 ```
