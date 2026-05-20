@@ -11,15 +11,20 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class PostController extends AbstractController
 {
     // Renders the home page.
-    // Creates an empty Post form and retrieves all posts sorted by date (newest first).
+    // If the user is not authenticated, redirects to the login page.
+    // Otherwise, renders the post form and the posts list.
     #[Route('/', name: 'app_default')]
     public function defaultAction(Request $request, EntityManagerInterface $em): Response
     {
+        // Redirect to login page if the user is not authenticated
+        if (!$this->getUser()) {
+            return $this->redirectToRoute('app_login');
+        }
+
         $form = $this->createForm(PostType::class, new Post(), [
             'action' => $this->generateUrl('app_post_new'),
         ]);
@@ -43,14 +48,12 @@ class PostController extends AbstractController
         $post = new Post();
         $form = $this->createForm(PostType::class, $post);
 
-        // Bind the request data to the form
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $em->persist($post);
             $em->flush();
 
-            // Return the new post data so the client can update the DOM
             return new JsonResponse([
                 'success' => true,
                 'post'    => [
@@ -75,7 +78,6 @@ class PostController extends AbstractController
 
     // Returns the full details of a single post as JSON.
     // Called via Ajax when the user clicks on a post title.
-    // The "canDelete" flag tells the client whether to show the delete button.
     #[Route('/view/{id}', name: 'app_post_view', methods: ['GET'])]
     public function viewAction(Post $post): JsonResponse
     {
@@ -86,23 +88,18 @@ class PostController extends AbstractController
                 'title'     => $post->getTitle(),
                 'content'   => $post->getContent(),
                 'created'   => $post->getCreated()->format('d/m/Y H:i'),
-                // Only logged-in users are allowed to delete posts
                 'canDelete' => $this->getUser() !== null,
             ],
         ]);
     }
 
-    // Deletes a post and returns its id as JSON so the client can
-    // remove it from the DOM.
+    // Deletes a post and returns its id as JSON.
     // Only accepts DELETE requests.
-    // #[IsGranted] returns a 403 response if the user is not authenticated.
     #[Route('/delete/{id}', name: 'app_post_delete', methods: ['DELETE'])]
     #[IsGranted('ROLE_USER')]
     public function deleteAction(Post $post, EntityManagerInterface $em): JsonResponse
     {
-        // Store the id before removing the entity (it becomes null after flush)
         $id = $post->getId();
-
         $em->remove($post);
         $em->flush();
 

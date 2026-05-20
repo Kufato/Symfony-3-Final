@@ -1,11 +1,44 @@
-<form id="login-form" class="card">
-    <span class="badge">Non connecté</span>
-    <h2>Bon retour</h2>
-    <p class="subtitle">Connectez-vous pour publier un post.</p>
-    <label>Adresse email</label>
-    <input type="email" name="email" placeholder="admin@test.com" required />
-    <label>Mot de passe</label>
-    <input type="password" name="password" placeholder="••••••••" required />
-    <button type="submit" class="btn">Se connecter</button>
-</form>
+{% extends 'base.html.twig' %}
 
+{% block content %}
+    <form id="login-form" class="card">
+        <span class="badge-grey">Not logged in</span>
+        <h2>Welcome back</h2>
+        <p class="subtitle">Log in to publish a post.</p>
+        <label>Email address</label>
+        <input type="email" name="email" placeholder="admin@test.com" required />
+        <label>Password</label>
+        <input type="password" name="password" placeholder="••••••••" required />
+        <button type="submit" class="btn">Log in</button>
+    </form>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.getElementById('login-form')
+            .addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: this.email.value,
+                        password: this.password.value,
+                    })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        // Redirect to home page to display the post form
+                        window.location.href = '/';
+                    } else {
+                        const toast = document.getElementById('toast');
+                        toast.textContent = 'Invalid credentials.';
+                        toast.className = 'toast error show';
+                        setTimeout(() => { toast.className = 'toast'; }, 4000);
+                    }
+                });
+            });
+    </script>
+{% endblock %}

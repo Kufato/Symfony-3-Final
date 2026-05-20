@@ -4,104 +4,55 @@
 
     {# =========================================================
        POST DETAIL MODAL
-       Hidden by default. Opened via Ajax when clicking a title.
-       Can be closed with: × button / click outside / Escape key.
     ========================================================= #}
     <div id="post-modal" class="modal-overlay" style="display:none;">
         <div id="post-detail" class="modal-content card">
-
-            <button id="close-modal" class="modal-close">
-                &times;
-            </button>
-
+            <button id="close-modal" class="modal-close">&times;</button>
             <h2 id="detail-title"></h2>
-
-            <span id="detail-date"
-                  class="post-date"
-                  style="font-size:12px; color:#888;">
-            </span>
-
-            <p id="detail-content"
-               style="margin-top:1rem; font-size:14px; line-height:1.6;">
-            </p>
-
-            {# Delete button — shown only when the user is logged in (canDelete flag) #}
-            <button id="detail-delete-btn"
-                    class="btn"
+            <span id="detail-date" class="post-date" style="font-size:12px; color:#888;"></span>
+            <p id="detail-content" style="margin-top:1rem; font-size:14px; line-height:1.6;"></p>
+            <button id="detail-delete-btn" class="btn"
                     style="margin-top:1rem; background:#ff3f3f; display:none;">
                 Delete
             </button>
-
         </div>
     </div>
 
     {# =========================================================
-       POST FORM (logged-in users only) / LOGIN FORM (guests)
+       POST FORM — only rendered when the user is authenticated
     ========================================================= #}
-    {% if app.user %}
-        {{ form_start(form, {'attr': {'id': 'post-form', 'class': 'card'}}) }}
-
-            <span class="badge">
-                Logged in as {{ app.user.username }}
-            </span>
-
-            <h2>New article</h2>
-
-            <p class="subtitle">
-                Write and publish your post.
-            </p>
-
-            <label>Title</label>
-            {{ form_widget(form.title) }}
-
-            <label>Content</label>
-            {{ form_widget(form.content) }}
-
-            <button type="submit" class="btn">
-                Publish
-            </button>
-
-        {{ form_end(form) }}
-
-    {% else %}
-        {# Render the login form via a sub-request to UserController::loginAction #}
-        {{ render(controller('App\\Controller\\UserController::loginAction')) }}
-    {% endif %}
+    {{ form_start(form, {'attr': {'id': 'post-form', 'class': 'card'}}) }}
+        <span class="badge">Logged in as {{ app.user.username }}</span>
+        <h2>New article</h2>
+        <p class="subtitle">Write and publish your post.</p>
+        <label>Title</label>
+        {{ form_widget(form.title) }}
+        <label>Content</label>
+        {{ form_widget(form.content) }}
+        <button type="submit" class="btn">Publish</button>
+    {{ form_end(form) }}
 
     {# =========================================================
-       POSTS LIST — visible to all users (authenticated or not)
+       POSTS LIST — visible to all users
     ========================================================= #}
     <div class="posts-list" style="margin-top: 2rem;">
-
         <h2 style="font-size: 16px; font-weight: 500; margin-bottom: 1rem;">
             Published articles
         </h2>
-
         <ul id="posts-list" style="list-style: none;">
-
             {% for post in posts %}
-
                 {# data-id is used by JS to identify the post for view/delete actions #}
                 <li class="post-item" data-id="{{ post.id }}">
-
                     <span class="post-title post-title-link">{{ post.title }}</span>
-
                     <span style="display:flex; align-items:center; gap:6px;">
                         <span class="post-date">{{ post.created|date('d/m/Y H:i') }}</span>
                         <span class="post-arrow">›</span>
                     </span>
-
                 </li>
             {% else %}
-
-                <li class="post-empty">
-                    No articles published yet.
-                </li>
-
+                <li class="post-empty">No articles published yet.</li>
             {% endfor %}
-
         </ul>
-        
     </div>
 
 {% endblock %}
@@ -110,83 +61,56 @@
     <script>
 
         // =========================================================
-        // TOAST NOTIFICATION
-        // Displays a temporary success or error message banner.
+        // TOAST
         // =========================================================
-
         function showToast(message, type) {
             const toast = document.getElementById('toast');
-
             toast.textContent = message;
             toast.className = 'toast ' + type + ' show';
-
-            // Auto-hide after 4 seconds
-            setTimeout(() => {
-                toast.className = 'toast';
-            }, 4000);
+            setTimeout(() => { toast.className = 'toast'; }, 4000);
         }
 
         // =========================================================
         // ADD POST TO LIST
-        // Prepends a new <li> to the posts list and binds the click
-        // event so the new post is immediately clickable.
         // =========================================================
-
         function addPostToList(post) {
             const list = document.getElementById('posts-list');
-
-            // Remove the "no articles" placeholder if present
             const empty = list.querySelector('.post-empty');
-            if (empty) {
-                empty.remove();
-            }
+            if (empty) empty.remove();
 
             const li = document.createElement('li');
             li.className = 'post-item';
             li.dataset.id = post.id;
-
             li.innerHTML = `
-                <span class="post-title post-title-link">
-                    ${post.title}
-                </span>
-                <span class="post-date">
-                    ${post.created}
+                <span class="post-title post-title-link">${post.title}</span>
+                <span style="display:flex; align-items:center; gap:6px;">
+                    <span class="post-date">${post.created}</span>
+                    <span class="post-arrow">›</span>
                 </span>
             `;
-
             list.prepend(li);
-
-            // Bind the click handler on the newly created item
             bindPostClick(li);
         }
 
         // =========================================================
         // OPEN MODAL
-        // Populates the modal with post data and displays it.
         // =========================================================
-
         function showPostDetail(post) {
             document.getElementById('detail-title').textContent   = post.title;
             document.getElementById('detail-date').textContent    = post.created;
             document.getElementById('detail-content').textContent = post.content;
 
             const deleteBtn = document.getElementById('detail-delete-btn');
-
-            // Show or hide the delete button based on the canDelete flag
-            // returned by the server (true only for authenticated users)
             deleteBtn.style.display = post.canDelete ? 'block' : 'none';
             deleteBtn.dataset.id    = post.id;
 
             document.getElementById('post-modal').style.display = 'flex';
-
-            // Prevent background scrolling while the modal is open
             document.body.style.overflow = 'hidden';
         }
 
         // =========================================================
         // CLOSE MODAL
         // =========================================================
-
         function closeModal() {
             document.getElementById('post-modal').style.display = 'none';
             document.body.style.overflow = '';
@@ -194,16 +118,11 @@
 
         // =========================================================
         // BIND CLICK ON POST TITLE
-        // Fetches post details from GET /view/{id} and opens the modal.
-        // Called for both server-rendered posts and dynamically added ones.
         // =========================================================
-
         function bindPostClick(li) {
             li.querySelector('.post-title-link')
                 .addEventListener('click', function () {
-                    const id = li.dataset.id;
-
-                    fetch(`/view/${id}`)
+                    fetch(`/view/${li.dataset.id}`)
                         .then(r => r.json())
                         .then(data => {
                             if (data.success) {
@@ -217,29 +136,22 @@
 
         // =========================================================
         // WEBSOCKET
-        // Opens a persistent connection to the Workerman server on
-        // port 8080. Listens for broadcast messages so all connected
-        // tabs stay in sync without polling.
         // =========================================================
-
         const ws = new WebSocket('ws://localhost:8080');
 
         ws.onmessage = function (event) {
             const data = JSON.parse(event.data);
 
-            // A new post was created in another tab — add it to the list
             if (data.type === 'post_created') {
                 addPostToList(data.post);
             }
 
-            // A post was deleted in another tab — remove it from the list
             if (data.type === 'post_deleted') {
                 const li = document.querySelector(
                     `#posts-list .post-item[data-id="${data.id}"]`
                 );
                 if (li) li.remove();
 
-                // Close the modal if it is currently showing the deleted post
                 const deleteBtn = document.getElementById('detail-delete-btn');
                 if (deleteBtn && deleteBtn.dataset.id == data.id) {
                     closeModal();
@@ -249,66 +161,38 @@
 
         document.addEventListener('DOMContentLoaded', function () {
 
-            // =========================================================
-            // BIND CLICK ON SERVER-RENDERED POSTS
-            // =========================================================
+            // Bind click on server-rendered posts
+            document.querySelectorAll('#posts-list .post-item').forEach(bindPostClick);
 
-            document.querySelectorAll('#posts-list .post-item')
-                .forEach(bindPostClick);
+            // Close modal — × button
+            document.getElementById('close-modal').addEventListener('click', closeModal);
 
-            // =========================================================
-            // CLOSE MODAL — three ways to close
-            // =========================================================
+            // Close modal — click outside
+            document.getElementById('post-modal').addEventListener('click', function (e) {
+                if (e.target === this) closeModal();
+            });
 
-            // 1. × button
-            document.getElementById('close-modal')
-                .addEventListener('click', closeModal);
-
-            // 2. Click on the dark overlay (outside the modal card)
-            document.getElementById('post-modal')
-                .addEventListener('click', function (e) {
-                    if (e.target === this) {
-                        closeModal();
-                    }
-                });
-
-            // 3. Escape key
+            // Close modal — Escape key
             document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') {
-                    closeModal();
-                }
+                if (e.key === 'Escape') closeModal();
             });
 
             // =========================================================
             // DELETE POST
-            // Sends a DELETE request to /delete/{id}.
-            // On success, broadcasts the deletion via WebSocket so all
-            // connected tabs remove the post from their list.
             // =========================================================
-
             document.getElementById('detail-delete-btn')
                 .addEventListener('click', function () {
                     const id = this.dataset.id;
-
-                    if (!confirm('Delete this article?')) {
-                        return;
-                    }
+                    if (!confirm('Delete this article?')) return;
 
                     fetch(`/delete/${id}`, {
                         method: 'DELETE',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     })
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
-                            // Broadcast to all tabs via WebSocket
-                            ws.send(JSON.stringify({
-                                type: 'post_deleted',
-                                id: data.id,
-                            }));
-
+                            ws.send(JSON.stringify({ type: 'post_deleted', id: data.id }));
                             showToast('Article deleted.', 'success');
                         } else {
                             showToast('Error while deleting the article.', 'error');
@@ -317,52 +201,12 @@
                 });
 
             // =========================================================
-            // LOGIN
-            // Sends credentials as JSON to Symfony's json_login firewall.
-            // On success, reloads the page to display the post form.
-            // =========================================================
-
-            const loginForm = document.getElementById('login-form');
-
-            if (loginForm) {
-                loginForm.addEventListener('submit', function (e) {
-                    e.preventDefault();
-
-                    fetch('/login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            username: loginForm.email.value,
-                            password: loginForm.password.value,
-                        }),
-                    })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Reload to switch from login form to post form
-                            location.reload();
-                        } else {
-                            showToast('Invalid credentials.', 'error');
-                        }
-                    });
-                });
-            }
-
-            // =========================================================
             // CREATE POST
-            // Submits the post form via Ajax to POST /post/new.
-            // On success, broadcasts the new post via WebSocket so all
-            // connected tabs add it to their list.
             // =========================================================
-
             const postForm = document.getElementById('post-form');
-
             if (postForm) {
                 postForm.addEventListener('submit', function (e) {
                     e.preventDefault();
-
                     fetch(postForm.action, {
                         method: 'POST',
                         body: new FormData(postForm),
@@ -372,12 +216,7 @@
                         if (data.success) {
                             showToast('Article published successfully!', 'success');
                             postForm.reset();
-
-                            // Broadcast to all tabs via WebSocket
-                            ws.send(JSON.stringify({
-                                type: 'post_created',
-                                post: data.post,
-                            }));
+                            ws.send(JSON.stringify({ type: 'post_created', post: data.post }));
                         } else {
                             showToast('Error: ' + data.message, 'error');
                         }

@@ -9,7 +9,7 @@ A Symfony 7.4 blog application with Ajax forms, modal post viewing, real-time up
 | Layer | Technology |
 |---|---|
 | Framework | Symfony 7.4.* (LTS) |
-| Language | PHP 8.5 |
+| Language | PHP 8.4 |
 | Database | SQLite (`var/app.db`) |
 | Templating | Twig |
 | Frontend | Vanilla JavaScript (Ajax + WebSocket) |
@@ -42,6 +42,24 @@ composer require workerman/workerman
 
 ---
 
+## Running the app
+
+```bash
+# Build the image (first time or after Dockerfile changes)
+make build
+
+# Start the containers
+make up
+
+# Stop the containers
+make down
+```
+
+The app will be available at `http://localhost:8000`.
+Both the Symfony server and the WebSocket server (port 8080) start automatically inside the container.
+
+---
+
 ## Exercises
 
 ### Exercise 00 — Post Entity
@@ -54,6 +72,9 @@ php bin/console make:entity Post
 
 Files involved:
 - `src/Entity/Post.php`
+
+**Flow:**
+The `Post` entity maps to a `post` table in SQLite. The `created` field is automatically set to the current date and time in the constructor, so the caller never has to set it manually.
 
 ---
 
@@ -90,8 +111,8 @@ php bin/console make:controller PostController
 ```
 
 **6. Create the templates**
-- `templates/user/login.html.twig` — Ajax login form
-- `templates/post/index.html.twig` — main page (login or post form + posts list)
+- `templates/user/login.html.twig` — Ajax login form (standalone page)
+- `templates/post/index.html.twig` — main page (post form + posts list)
 - `templates/base.html.twig` — main layout with logout button and toast system
 
 **7. Set up the database**
@@ -112,6 +133,33 @@ File: `src/Command/CreateUserCommand.php`
 php bin/console app:create-user
 ```
 
+**Flow:**
+
+```
+User visits /
+  └─ PostController::defaultAction checks getUser()
+       ├─ Not logged in → redirect to /login
+       └─ Logged in     → render post form + posts list
+
+User visits /login
+  └─ UserController::loginAction checks getUser()
+       ├─ Already logged in → redirect to /
+       └─ Not logged in     → render login form
+
+User submits login form (Ajax)
+  └─ fetch POST /login (JSON) → Symfony json_login firewall
+       ├─ Credentials valid   → LoginSuccessHandler returns { success: true }
+       │                         JS redirects to /
+       └─ Credentials invalid → LoginFailureHandler returns { success: false }
+                                 JS shows error toast
+
+User clicks logout button
+  └─ GET /logout → Symfony clears session → redirects to /
+                   → / detects no user → redirects to /login
+```
+
+The login form is submitted via Ajax as JSON. Symfony's `json_login` firewall intercepts the request on `/login`, verifies the credentials, and calls the appropriate handler. No page reload occurs on failure — the error is shown as a toast. On success, JavaScript redirects to `/` which now shows the post form.
+
 ---
 
 ### Exercise 02 — Posts List & Validation
@@ -123,6 +171,24 @@ Wire up post creation with Ajax, display the list, and add validation.
 - `Post` entity — add `UniqueEntity` constraint on `title`
 - `templates/post/index.html.twig` — display the posts list, handle Ajax form submission, show success/error toasts
 - `templates/base.html.twig` — add the toast system and the logout button (visible only when logged in)
+
+**Flow:**
+
+```
+User fills in the post form and clicks "Publish"
+  └─ fetch POST /post/new (FormData) → PostController::newAction
+       ├─ Form valid and title unique
+       │    └─ Post saved to DB
+       │       → { success: true, post: { id, title, created } }
+       │         JS shows success toast
+       │         JS broadcasts via WebSocket (see Exercise 04)
+       │
+       └─ Form invalid (e.g. duplicate title)
+            → { success: false, message: "..." }
+              JS shows error toast
+```
+
+The post list is rendered server-side by Twig on page load (sorted by date descending). New posts are added to the top of the list dynamically by JavaScript after a successful Ajax submission, without any page reload.
 
 ---
 
@@ -144,6 +210,26 @@ Deletes the post and returns its `id` as JSON.
 - The modal contains a delete button (visible only when logged in) which shows a confirmation dialog before calling `/delete/{id}`
 - On successful deletion, the post is removed from the list and the modal is closed
 - The modal can be closed via the × button, a click outside, or the `Escape` key
+
+**Flow:**
+
+```
+User clicks a post title
+  └─ fetch GET /view/{id} → PostController::viewAction
+       └─ Returns { success: true, post: { id, title, content, created, canDelete } }
+          JS populates and opens the modal
+          Delete button is shown only if canDelete === true
+
+User clicks "Delete" in the modal
+  └─ confirm() dialog shown
+       ├─ User cancels → nothing happens
+       └─ User confirms
+            └─ fetch DELETE /delete/{id} → PostController::deleteAction
+                 └─ Post removed from DB
+                    → { success: true, id }
+                    JS broadcasts via WebSocket (see Exercise 04)
+                    Modal closes
+```
 
 ---
 
@@ -171,36 +257,57 @@ php bin/console websocket:server
 - When a post is **created**: instead of updating the DOM directly, the client sends `{ type: 'post_created', post: {...} }` to the WS server, which rebroadcasts it to everyone — all tabs update their list
 - When a post is **deleted**: same pattern — the client sends `{ type: 'post_deleted', id: ... }` and all tabs remove the post from their list and close the modal if it was open
 
-**Running the app (two terminals required):**
+**Flow:**
 
-```bash
-# Terminal 1 — Symfony dev server
-symfony server:start
-
-# Terminal 2 — WebSocket server
-php bin/console websocket:server
 ```
+Two browser tabs are open on /
+
+Tab 1 — creates a post:
+  └─ fetch POST /post/new → Symfony saves to DB → { success: true, post: {...} }
+     ws.send({ type: 'post_created', post: {...} })
+       └─ Workerman receives the message
+          └─ Broadcasts to ALL connected clients (Tab 1 + Tab 2)
+               ├─ Tab 1: onmessage → addPostToList() → post appears in list
+               └─ Tab 2: onmessage → addPostToList() → post appears in list
+
+Tab 1 — deletes a post:
+  └─ fetch DELETE /delete/{id} → Symfony deletes from DB → { success: true, id }
+     ws.send({ type: 'post_deleted', id })
+       └─ Workerman broadcasts to ALL clients
+               ├─ Tab 1: onmessage → removes <li> from DOM, closes modal
+               └─ Tab 2: onmessage → removes <li> from DOM, closes modal if open
+```
+
+The key design decision: Symfony (HTTP) is responsible for persisting data to the database. Workerman (WebSocket) is only responsible for notifying all clients. The two servers are completely independent — they never talk to each other directly.
 
 ---
 
 ## Useful Commands
 
+### Local
+
 ```bash
-# Create a new user
-php bin/console app:create-user
+php bin/console app:create-user                                   # Create a new user
+php bin/console cache:clear                                       # Clear the cache
+php bin/console debug:router                                      # List all routes
+php bin/console dbal:run-sql "SELECT email, username FROM user"   # Inspect users in DB
+php bin/console dbal:run-sql "SELECT * FROM post"                 # Inspect posts in DB
+php bin/console websocket:server                                  # Start the WebSocket server
+```
 
-# Clear the cache
-php bin/console cache:clear
+### Docker
 
-# List all routes
-php bin/console debug:router
-
-# Inspect users in DB
-php bin/console dbal:run-sql "SELECT email, username FROM user"
-
-# Start the WebSocket server
-php bin/console websocket:server
-
-# Inspect posts in DB
-php bin/console dbal:run-sql "SELECT * FROM post"
+```bash
+make build          # Build the Docker image
+make up             # Start the containers (foreground)
+make up-d           # Start the containers (background)
+make down           # Stop the containers
+make restart        # Rebuild and restart
+make shell          # Open a bash shell inside the container
+make create-user    # Create a new user
+make cache-clear    # Clear the Symfony cache
+make routes         # List all routes
+make db-users       # Inspect users in DB
+make db-posts       # Inspect posts in DB
+make logs           # Follow container logs
 ```
